@@ -1,0 +1,895 @@
+Aluno Wellington Bezerra - 1413383
+Aluno Guilherme Marques - 1220676
+
+QUESTÃO 1) Utilizando os comandos fork(), waitpid() e exit() faça um programa composto por dois processos: processo pai e processo filho.
+Pai: Imprime “Processo pai iniciado”, o seu pid e o pid de seu filho, espera o filho terminar e imprime "Processo pai finalizado".
+Filho: Imprime “Processo filho iniciado”, o seu pid, o pid do seu pai, e ao terminar imprime "Processo filho finalizado".
+DICA: Busque na internet o comando utilizado para obter o PID (process id) de um processo.
+-----------------------------------------------------
+exercicio1.c
+
+#include  <stdio.h>
+#include  <string.h>
+#include  <sys/types.h>
+#include  <sys/wait.h>
+#include <unistd.h>
+
+int main(void){
+
+    //variaveis
+	pid_t pidfilho, pidpai;
+	int status;
+
+	pidfilho = fork(); //retorna o pid do filho
+	pidpai = getpid(); //retorna o pid do pai
+
+	if( pidfilho != 0 ){
+		printf("\n Processo pai iniciado \n");
+		printf("\n pid do pai %d \n", pidpai);
+		printf("\n pid do filho %d \n", pidfilho);
+		waitpid(-1, &status, 0);
+		printf("\n Processo do pai finalizado \n");
+	}
+	else {
+		printf("\n Processo filho iniciado \n");
+		printf("\n pid do pai %d \n", pidpai);
+		printf("\n pid do filho %d \n", pidfilho);
+		printf("\n Processo do filho finalizado \n");
+	}
+	return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab1 lab1.c
+$ ./lab1
+-----------------------------------------------------
+RESULTADO
+
+Processo pai iniciado
+
+pid do pai 55365
+
+pid do filho 55366
+
+Processo filho iniciado
+
+pid do pai 55366
+
+pid do filho 0
+
+Processo do filho finalizado
+
+Processo do pai finalizado
+-----------------------------------------------------
+CONCLUSÃO
+
+No início do programa, a função fork() é utilizada para fazer uma cópia do processo.
+Nesse instante, assim como o pai, o filho passa a ter um PID.
+Depois que o processo pai é iniciado, a função waitpid() é chamada, o pid do filho se torna 0 e o processo pai fica aguardando o processo filho terminar.
+Depois que o processo filho for encerrado, o processo pai também será
+-----------------------------------------------------
+
+QUESTÃO 2) Ainda com um programa composto por dois processos, crie uma variável visível ao pai e ao filho iniciada com o valor zero.
+  O pai deve executar um loop de 100 vezes, somar 5 a esta variável a cada iteração do loop e imprimir o texto:
+  *Pai <PID> - <valor da variável>*.
+
+  O filho deve executar um loop de 100 vezes, somar 10 a esta variável a cada iteração do loop e imprimir o texto:
+  *Filho <PID> - <valor da variável>*.
+
+a)O que você observou sobre o valor da variável no pai e no filho?
+b)O que você observou sobre a concorrência entre os processos?
+c) Explique o por quê destes comportamentos.
+
+DICA: Para saber os protótipos das funções fork e waitpid execute o comando “man” no Terminal para acessar o manual: "man fork" e "man waitpid".
+
+-----------------------------------------------------
+exercicio2.c
+
+#include  <stdio.h>
+#include  <string.h>
+#include  <sys/types.h>
+#include  <sys/wait.h>
+#include <unistd.h>
+
+int main(void){
+
+	pid_t pidfilho, pidpai;
+	int status;
+	int var = 0;
+	int i;
+
+	pidfilho = fork(); //retorna o pid do filho
+	pidpai = getpid(); //retorna o pid do pai
+
+	if( pidfilho != 0 ){
+		printf("\n Processo do pai iniciado \n");
+		for(i=0; i<100; i++){
+			var += 5;
+		}
+        printf("\n PAI %d - %d \n", pidpai, var);
+		waitpid(-1, &status, 0);
+		printf("\n Processo do pai finalizado \n");
+	}
+	else {
+		printf("\n Processo do filho iniciado \n");
+		for(i=0; i<100; i++){
+			var += 10;
+		}
+        printf("\nFILHO %d - %d", pidpai, var);
+		printf("\n Processo do filho finalizado \n");
+	}
+	return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab2 lab2.c
+$ ./lab2
+-----------------------------------------------------
+RESULTADO
+
+Processo do pai iniciado
+
+PAI 55211 - 500
+
+Processo do filho iniciado
+
+FILHO 55212 - 1000
+Processo do filho finalizado
+
+Processo do pai finalizado
+
+-----------------------------------------------------
+CONCLUSÃO2. a) Foi observado que o valor da variável “var” no pai e no filho foram diferentes
+b) Quando os dois processos estão em execução, cada um deles calcula a variável “var” de forma independente.
+c) No início do programa, a função fork() é utilizada para gerar um pidfilho. Ou seja, esse pidfilho é uma cópia do processo pai,
+onde cada processo utiliza um espaço de memória diferente.
+
+-----------------------------------------------------
+QUESTÃO 3) Faça um programa em que três processos executam em paralelo as seguintes ações:
+
+Pai: Imprime os números de 0 a 99, com um intervalo de 1 segundo entre a impressão de cada número.
+Após imprimir todos os números, imprime a frase “Processo pai vai finalizar” e finaliza quando o filho terminar.
+
+Filho: Imprime os números de 100 a 199, com um intervalo de 2 segundo entre a impressão cada número.
+Antes de imprimir os números, imprime a frase “Filho foi criado”.
+Após imprimir todos os números, imprime a frase “processo filho vai finalizar” e finaliza quando o neto terminar.
+
+Neto: filho do processo Filho (ou seja, neto do processo Pai).
+Imprime os números de 200 a 299, com um intervalo de 3 segundos entre cada número.
+Antes de imprimir os números, imprime a frase “Neto foi criado”.
+Após imprimir todos os números, imprime a frase “processo neto vai finalizar” e finaliza o processo.
+
+Importante: Em cada printf os processos devem imprimir o seu pid e o pid do seu pai.
+
+DICA: A chamada ao sistema sleep(1) bloqueia o processo por 1 segundo.
+a)É possível observar os processos executando em paralelo?
+b)Que alterações devem ser feitas em seu programa para que primeiro sejam
+exibidas as impressões do neto, depois do filho e depois do pai?
+
+-----------------------------------------------------
+exercicio3.c
+
+#include  <stdio.h>
+#include  <string.h>
+#include  <sys/types.h>
+#include  <sys/wait.h>
+#include <unistd.h>
+
+int main(void){
+
+	pid_t pidfilho, pidpai, pidneto;
+	int status;
+	int i;
+
+	pidfilho = fork(); //retorna o pid do filho
+	pidpai = getpid(); //retorna o pid do pai
+
+	//processo do pai
+	if( pidfilho != 0 ){
+		printf("\n Processo do pai iniciado \n");
+		for(i=0; i<100; i++){
+			printf("\nPAI - numero: %d \n", i);
+			sleep(1);
+		}
+		waitpid(-1, &status, 0);
+		printf("\n Processo do pai finalizado \n");
+	}
+	else {
+		pidneto = fork();
+		//processo do filho
+		if( pidneto != 0 ){
+			printf("\n Processo do filho iniciado \n");
+			for(i=100; i<200; i++){
+				printf("\nFILHO - numero: %d \n", i);
+				sleep(2);
+			}
+			waitpid(-1, &status, 0);
+			printf("\n Processo do filho finalizado \n");
+		}
+		// processo do neto
+		else {
+			printf("\n Processo do NETO iniciado \n");
+			for(i=200; i<300; i++){
+				printf("\nNETO - numero: %d \n", i);
+				sleep(3);
+			}
+			printf("\n Processo do NETO finalizado \n");
+		}
+	}
+	return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab3 lab3.c
+$ ./lab3
+
+-----------------------------------------------------
+RESULTADO
+
+Processo do pai iniciado
+
+PAI - numero: 0
+
+ Processo do filho iniciado
+
+FILHO - numero: 100
+
+ Processo do NETO iniciado
+
+NETO - numero: 200
+
+PAI - numero: 1
+
+FILHO - numero: 101
+
+PAI - numero: 2
+
+NETO - numero: 201
+
+PAI - numero: 3
+
+FILHO - numero: 102
+
+PAI - numero: 4
+
+PAI - numero: 5
+
+FILHO - numero: 103
+
+NETO - numero: 202
+
+PAI - numero: 6
+
+PAI - numero: 7
+
+FILHO - numero: 104
+
+PAI - numero: 8
+
+NETO - numero: 203
+
+PAI - numero: 9
+
+FILHO - numero: 105
+
+PAI - numero: 10
+
+PAI - numero: 11
+
+
+FILHO - numero: 106
+NETO - numero: 204
+
+PAI - numero: 12
+
+PAI - numero: 13
+
+FILHO - numero: 107
+
+PAI - numero: 14
+
+NETO - numero: 205
+
+PAI - numero: 15
+
+FILHO - numero: 108
+
+PAI - numero: 16
+
+PAI - numero: 17
+
+
+FILHO - numero: 109
+NETO - numero: 206
+
+PAI - numero: 18
+
+PAI - numero: 19
+
+FILHO - numero: 110
+
+PAI - numero: 20
+
+NETO - numero: 207
+
+PAI - numero: 21
+
+FILHO - numero: 111
+
+PAI - numero: 22
+
+PAI - numero: 23
+
+
+NETO - numero: 208
+FILHO - numero: 112
+
+PAI - numero: 24
+
+PAI - numero: 25
+
+FILHO - numero: 113
+
+PAI - numero: 26
+
+NETO - numero: 209
+
+PAI - numero: 27
+
+FILHO - numero: 114
+
+PAI - numero: 28
+
+PAI - numero: 29
+
+NETO - numero: 210
+
+FILHO - numero: 115
+
+PAI - numero: 30
+
+PAI - numero: 31
+
+FILHO - numero: 116
+
+PAI - numero: 32
+
+NETO - numero: 211
+
+PAI - numero: 33
+
+FILHO - numero: 117
+
+PAI - numero: 34
+
+PAI - numero: 35
+
+NETO - numero: 212
+
+FILHO - numero: 118
+
+PAI - numero: 36
+
+PAI - numero: 37
+
+FILHO - numero: 119
+
+PAI - numero: 38
+
+NETO - numero: 213
+
+PAI - numero: 39
+
+FILHO - numero: 120
+
+PAI - numero: 40
+
+PAI - numero: 41
+
+NETO - numero: 214
+
+FILHO - numero: 121
+
+PAI - numero: 42
+
+PAI - numero: 43
+
+FILHO - numero: 122
+
+PAI - numero: 44
+
+NETO - numero: 215
+
+PAI - numero: 45
+
+FILHO - numero: 123
+
+PAI - numero: 46
+
+PAI - numero: 47
+
+NETO - numero: 216
+
+FILHO - numero: 124
+
+PAI - numero: 48
+
+PAI - numero: 49
+
+FILHO - numero: 125
+
+PAI - numero: 50
+
+NETO - numero: 217
+
+PAI - numero: 51
+
+FILHO - numero: 126
+
+PAI - numero: 52
+
+PAI - numero: 53
+
+NETO - numero: 218
+
+FILHO - numero: 127
+
+PAI - numero: 54
+
+PAI - numero: 55
+
+FILHO - numero: 128
+
+PAI - numero: 56
+
+NETO - numero: 219
+
+PAI - numero: 57
+
+FILHO - numero: 129
+
+PAI - numero: 58
+
+PAI - numero: 59
+
+NETO - numero: 220
+
+FILHO - numero: 130
+
+PAI - numero: 60
+
+PAI - numero: 61
+
+FILHO - numero: 131
+
+PAI - numero: 62
+
+NETO - numero: 221
+
+PAI - numero: 63
+
+FILHO - numero: 132
+
+PAI - numero: 64
+
+PAI - numero: 65
+
+NETO - numero: 222
+
+FILHO - numero: 133
+
+PAI - numero: 66
+
+PAI - numero: 67
+
+FILHO - numero: 134
+
+PAI - numero: 68
+
+NETO - numero: 223
+
+PAI - numero: 69
+
+FILHO - numero: 135
+
+PAI - numero: 70
+
+PAI - numero: 71
+
+NETO - numero: 224
+
+FILHO - numero: 136
+
+PAI - numero: 72
+
+PAI - numero: 73
+
+FILHO - numero: 137
+
+PAI - numero: 74
+
+NETO - numero: 225
+
+PAI - numero: 75
+
+FILHO - numero: 138
+
+PAI - numero: 76
+
+PAI - numero: 77
+
+NETO - numero: 226
+
+FILHO - numero: 139
+
+PAI - numero: 78
+
+PAI - numero: 79
+
+FILHO - numero: 140
+
+PAI - numero: 80
+
+NETO - numero: 227
+
+PAI - numero: 81
+
+FILHO - numero: 141
+
+PAI - numero: 82
+
+PAI - numero: 83
+
+NETO - numero: 228
+
+FILHO - numero: 142
+
+PAI - numero: 84
+
+PAI - numero: 85
+
+FILHO - numero: 143
+
+PAI - numero: 86
+
+NETO - numero: 229
+
+PAI - numero: 87
+
+FILHO - numero: 144
+
+PAI - numero: 88
+
+PAI - numero: 89
+
+NETO - numero: 230
+
+FILHO - numero: 145
+
+PAI - numero: 90
+
+PAI - numero: 91
+
+FILHO - numero: 146
+
+PAI - numero: 92
+
+NETO - numero: 231
+
+PAI - numero: 93
+
+FILHO - numero: 147
+
+PAI - numero: 94
+
+PAI - numero: 95
+
+NETO - numero: 232
+
+FILHO - numero: 148
+
+PAI - numero: 96
+
+PAI - numero: 97
+
+FILHO - numero: 149
+
+PAI - numero: 98
+
+NETO - numero: 233
+
+PAI - numero: 99
+
+FILHO - numero: 150
+
+NETO - numero: 234
+
+FILHO - numero: 151
+
+FILHO - numero: 152
+
+NETO - numero: 235
+
+FILHO - numero: 153
+
+NETO - numero: 236
+
+FILHO - numero: 154
+
+FILHO - numero: 155
+
+NETO - numero: 237
+
+FILHO - numero: 156
+
+NETO - numero: 238
+
+FILHO - numero: 157
+
+FILHO - numero: 158
+
+NETO - numero: 239
+
+FILHO - numero: 159
+
+NETO - numero: 240
+
+FILHO - numero: 160
+
+FILHO - numero: 161
+
+NETO - numero: 241
+
+FILHO - numero: 162
+
+NETO - numero: 242
+
+FILHO - numero: 163
+
+FILHO - numero: 164
+
+NETO - numero: 243
+
+FILHO - numero: 165
+
+NETO - numero: 244
+
+FILHO - numero: 166
+
+FILHO - numero: 167
+
+NETO - numero: 245
+
+FILHO - numero: 168
+
+NETO - numero: 246
+
+FILHO - numero: 169
+
+FILHO - numero: 170
+
+NETO - numero: 247
+
+FILHO - numero: 171
+
+NETO - numero: 248
+
+FILHO - numero: 172
+
+FILHO - numero: 173
+
+NETO - numero: 249
+
+FILHO - numero: 174
+
+NETO - numero: 250
+
+FILHO - numero: 175
+
+FILHO - numero: 176
+
+NETO - numero: 251
+
+FILHO - numero: 177
+
+NETO - numero: 252
+
+FILHO - numero: 178
+
+FILHO - numero: 179
+
+NETO - numero: 253
+
+FILHO - numero: 180
+
+NETO - numero: 254
+
+FILHO - numero: 181
+
+FILHO - numero: 182
+
+NETO - numero: 255
+
+FILHO - numero: 183
+
+NETO - numero: 256
+
+FILHO - numero: 184
+
+FILHO - numero: 185
+
+NETO - numero: 257
+
+FILHO - numero: 186
+
+NETO - numero: 258
+
+FILHO - numero: 187
+
+FILHO - numero: 188
+
+NETO - numero: 259
+
+FILHO - numero: 189
+
+NETO - numero: 260
+
+FILHO - numero: 190
+
+FILHO - numero: 191
+
+NETO - numero: 261
+
+FILHO - numero: 192
+
+NETO - numero: 262
+
+FILHO - numero: 193
+
+FILHO - numero: 194
+
+NETO - numero: 263
+
+FILHO - numero: 195
+
+NETO - numero: 264
+
+FILHO - numero: 196
+
+FILHO - numero: 197
+
+NETO - numero: 265
+
+FILHO - numero: 198
+
+NETO - numero: 266
+
+FILHO - numero: 199
+
+NETO - numero: 267
+
+NETO - numero: 268
+
+NETO - numero: 269
+
+NETO - numero: 270
+
+NETO - numero: 271
+
+NETO - numero: 272
+
+NETO - numero: 273
+
+NETO - numero: 274
+
+NETO - numero: 275
+
+NETO - numero: 276
+
+NETO - numero: 277
+
+NETO - numero: 278
+
+NETO - numero: 279
+
+NETO - numero: 280
+
+NETO - numero: 281
+
+NETO - numero: 282
+
+NETO - numero: 283
+
+NETO - numero: 284
+
+NETO - numero: 285
+
+NETO - numero: 286
+
+NETO - numero: 287
+
+NETO - numero: 288
+
+NETO - numero: 289
+
+NETO - numero: 290
+
+NETO - numero: 291
+
+NETO - numero: 292
+
+NETO - numero: 293
+
+NETO - numero: 294
+
+NETO - numero: 295
+
+NETO - numero: 296
+
+NETO - numero: 297
+
+NETO - numero: 298
+
+NETO - numero: 299
+
+ Processo do NETO finalizado
+
+ Processo do filho finalizado
+
+ Processo do pai finalizado
+
+-----------------------------------------------------
+CONCLUSÃO
+
+3. a) Sim, pois é possível ver as iterações do pai, filho e neto ocorrendo uma atrás da outra, operando de forma simultânea.
+b) Basta colocar as chamadas de waitpid() do processo pai e filho antes do for().
+Com isso os processos neto, filho e pai serão respectivamente finalizados.
+
+-----------------------------------------------------
+QUESTÃO 4) 4) Crie um programa que realize a impressão da frase: "Alo mundo", no arquivo “alomundo.c”.
+Compile este programa. Em seguida, crie um programa que execute o programa alomundo criado por você.
+Utilize alguma função da família "execv" para realizar esta atividade.
+DICA: Para saber os protótipos das funções disponíveis execute o comando “man” no Terminal (para acessar o manual: "man execv").
+-----------------------------------------------------
+exercicio4.c
+
+#include <unistd.h>
+
+int main(void){
+	execv("/Users/wellingtonbezerra/Desktop/alomundo", NULL);
+	return 0;
+}
+-----------------------------------------------------
+alomundo.c
+
+#include <stdio.h>
+
+int main(void){
+
+	printf("alo mundo");
+	return 0;
+
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o alomundo alomundo.c
+
+$ gcc -o lab4 lab4.c
+$ ./lab4
+-----------------------------------------------------
+RESULTADO
+alo mundo
+-----------------------------------------------------
+CONCLUSÃO
+
+4. Foi gerado um executável a partir arquivo alomundo.c.
+Esse arquivo gerado foi executado pela função execv() chamada pelo lab4.c.
+Essa função recebe o patas como parâmetro e executa o arquivo presente nesse diretório
