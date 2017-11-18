@@ -1,0 +1,509 @@
+Aluno Wellington Bezerra - 1413383
+Aluno Guilherme Marques - 1220676
+
+QUESTÃO 1) Usando processos, escreva um programa C que
+implemente o problema do produtor/consumidor.
+Existem 2 consumidores. O produtor e os
+consumidores devem compartilhar os recursos do
+processo (filas e demais dados). O produtor deve
+produzir dados (números inteiros) a cada 1
+segundo colocando-os em uma fila (buffer). Os
+consumidores devem retirar dados da fila a cada 2
+segundos. O tamanho máximo da fila deve ser de
+8 elementos (MAXFILA) e tanto o produtor como
+os dois consumidores devem produzir/consumir
+64 elementos. 
+-----------------------------------------------------
+exercicio1.c
+
+#include <string.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/msg.h>
+
+#define TAMFILA 8   /* Tamanho da fila */
+#define MSGMAX 100  /* tamanho maximo da mensagem */
+#define MSGNUM 64   /* Numero de mensagens */
+
+/* Estrutura do buffer da mensagem */
+typedef struct msgbuf {
+  long    mtype;                /* tipo da mensagem */
+  char    mtext[MSGMAX];        /* texto da mensagem */
+} message_buf;
+
+/* Variaveis globais */
+int message_count = 0;
+int msgid;
+
+void  consumidor(int id) {
+
+  int i = 0;
+  message_buf rbuf;
+
+  while (i < MSGNUM/2) {
+    sleep(2);
+    if (msgrcv(msgid, &rbuf, MSGMAX, 1, 0) < 0) {
+      printf("Erro - consumidor %d. \n", id);
+    }
+
+    printf("Consumidor %d: %s \n", id, rbuf.mtext);
+    i++;
+  }
+}
+
+void produtor() {
+
+  int i;
+  message_buf sbuffer;
+  size_t buf_size;
+
+  for (i = 0; i < MSGNUM; i++){
+    sbuffer.mtype = 1;
+    sprintf(sbuffer.mtext, "Mensagem: %d", i);
+    buf_size = strlen(sbuffer.mtext) + 1 ;
+
+    if (msgsnd(msgid, &sbuffer, buf_size, IPC_NOWAIT) < 0) {
+      printf("Erro  - produtor. \n");
+    }
+
+    printf("Produtor: %s\n", sbuffer.mtext);
+
+    sleep(1);
+  }
+}
+
+
+int main (void) {
+  key_t chave = 9876;
+
+  if ((msgid = msgget(chave, IPC_CREAT | 0666 )) < 0) exit(1);
+
+  if (fork() == 0) {            /* Processo - Consumidor 0 */
+    consumidor(0);
+
+  } else if(fork() == 0) {      /* Processo - Consumidor 1 */
+    consumidor(1);
+
+  } else {
+    produtor();                 /* Processo - Produtor */
+
+  }
+
+  return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o exer1 exer1.c
+$ ./exer1
+-----------------------------------------------------
+RESULTADO
+
+Produtor: Msg 0
+Produtor: Msg 1
+Consumidor 0: Msg 0 
+Consumidor 1: Msg 1 
+Produtor: Msg 2
+Produtor: Msg 3
+Consumidor 1: Msg 2 
+Consumidor 0: Msg 3 
+Produtor: Msg 4
+Produtor: Msg 5
+Consumidor 0: Msg 4 
+Consumidor 1: Msg 5 
+Produtor: Msg 6
+Produtor: Msg 7
+Consumidor 1: Msg 6 
+Consumidor 0: Msg 7 
+Produtor: Msg 8
+Produtor: Msg 9
+Consumidor 1: Msg 8 
+Consumidor 0: Msg 9 
+Produtor: Msg 10
+Produtor: Msg 11
+Consumidor 1: Msg 11 
+Consumidor 0: Msg 10 
+Produtor: Msg 12
+Produtor: Msg 13
+Consumidor 1: Msg 12 
+Consumidor 0: Msg 13 
+Produtor: Msg 14
+Produtor: Msg 15
+Consumidor 1: Msg 14 
+Consumidor 0: Msg 15 
+Produtor: Msg 16
+Produtor: Msg 17
+Consumidor 0: Msg 16 
+Consumidor 1: Msg 17 
+Produtor: Msg 18
+Produtor: Msg 19
+Consumidor 1: Msg 18 
+Consumidor 0: Msg 19 
+Produtor: Msg 20
+Produtor: Msg 21
+Consumidor 0: Msg 20 
+Consumidor 1: Msg 21 
+Produtor: Msg 22
+Produtor: Msg 23
+Consumidor 0: Msg 22 
+Consumidor 1: Msg 23 
+Produtor: Msg 24
+Produtor: Msg 25
+Consumidor 0: Msg 24 
+Consumidor 1: Msg 25 
+Produtor: Msg 26
+Produtor: Msg 27
+Consumidor 1: Msg 26 
+Consumidor 0: Msg 27 
+Produtor: Msg 28
+Produtor: Msg 29
+Consumidor 0: Msg 28 
+Consumidor 1: Msg 29 
+Produtor: Msg 30
+Produtor: Msg 31
+Consumidor 1: Msg 30 
+Consumidor 0: Msg 31 
+Produtor: Msg 32
+Produtor: Msg 33
+Consumidor 0: Msg 32 
+Consumidor 1: Msg 33 
+Produtor: Msg 34
+Produtor: Msg 35
+Consumidor 1: Msg 35 
+Consumidor 0: Msg 34 
+Produtor: Msg 36
+Produtor: Msg 37
+Consumidor 1: Msg 36 
+Consumidor 0: Msg 37 
+Produtor: Msg 38
+Produtor: Msg 39
+Consumidor 0: Msg 38 
+Consumidor 1: Msg 39 
+Produtor: Msg 40
+Produtor: Msg 41
+Consumidor 0: Msg 40 
+Consumidor 1: Msg 41 
+Produtor: Msg 42
+Produtor: Msg 43
+Consumidor 0: Msg 42 
+Consumidor 1: Msg 43 
+Produtor: Msg 44
+Produtor: Msg 45
+Consumidor 1: Msg 44 
+Consumidor 0: Msg 45 
+Produtor: Msg 46
+Produtor: Msg 47
+Consumidor 1: Msg 47 
+Consumidor 0: Msg 46 
+Produtor: Msg 48
+Produtor: Msg 49
+Consumidor 1: Msg 48 
+Consumidor 0: Msg 49 
+Produtor: Msg 50
+Produtor: Msg 51
+Consumidor 1: Msg 50 
+Consumidor 0: Msg 51 
+Produtor: Msg 52
+Produtor: Msg 53
+Consumidor 1: Msg 53 
+Consumidor 0: Msg 52 
+Produtor: Msg 54
+Produtor: Msg 55
+Consumidor 1: Msg 55 
+Consumidor 0: Msg 54 
+Produtor: Msg 56
+Produtor: Msg 57
+Consumidor 1: Msg 56 
+Consumidor 0: Msg 57 
+Produtor: Msg 58
+Produtor: Msg 59
+Consumidor 1: Msg 58 
+Consumidor 0: Msg 59 
+Produtor: Msg 60
+Produtor: Msg 61
+Consumidor 1: Msg 60 
+Consumidor 0: Msg 61 
+Produtor: Msg 62
+Produtor: Msg 63
+Consumidor 0: Msg 63 
+Consumidor 1: Msg 62 
+-----------------------------------------------------
+CONCLUSÃO
+
+Tamanho máximo da fila é 8.
+Tamanho máximo da mensagem é 100.
+Número de mensagens 64.
+
+Estrutura da mensagem é definida como "message_buf"
+
+Nesse programa, os processos irão se comunicar por meio da troca de mensagens.
+O envio e recebimento de mensagens é feito utilizando as funções msgsnd() e msgrcv, respectivamente. 
+IPC_CREAT é utilizado para especificar a chave da mensagem
+A função msgget() retorna o identificador da fila de mensagem
+O produtor é executado em um processo de 1 em 1 segundo colocando um elemendo na lista de mensagem, 
+enquanto existe dois consumidores, cada um sendo executado em um processo de 2 em 2 segundos e consumindo
+um elemento do buffer de mensagem.
+
+No final da execução do programa, todos os 64 itens serão produzidos pelo produtor 
+e consumidos pelos consumidores 
+
+-----------------------------------------------------
+
+QUESTÃO 2) Tal como no exercício anterior, implemente a troca
+de mensagens sé que neste exercício as mensagens
+devem ser direcionadas para um dos consumidores.
+Assim, serão geradas 64 mensagens, sendo 32 para
+um dos consumidores e 32 para o outro.
+-----------------------------------------------------
+exercicio2.c
+
+#include <pthread.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/msg.h>
+
+/* DEFINE */
+#define MSGMAX 100
+#define TAMFILA 8
+#define MSGNUM 64 /* Numero de mensagens */
+
+/* Estrutura do buffer da mensagem */
+typedef struct msgbuf {
+	long    mtype;						/* tipo da mensagem */
+	char    mtext[MSGMAX];				/* texto da mensagem */
+} message_buf;
+
+/* Variavies globais */
+int idMSG;
+int idMSG2;
+
+void  consumidor(int id) {
+
+	message_buf rbuffer;
+	int i = 0;
+
+	while (i < MSGNUM/2) {
+		sleep(2);
+
+		if((id % 2) != 0) {											/* id = 1 */
+			if (msgrcv(idMSG2, &rbuffer, MSGMAX, 1, 0) < 0) {
+				printf("Erro - consumidor %d. \n", id);
+			}
+
+		} else {													/* id = 0 */
+			if (msgrcv(idMSG, &rbuffer, MSGMAX, 1, 0) < 0) {
+				printf("Erro - consumidor %d. \n", id);
+			}
+
+		}
+
+		printf("Consumidor %d: %s \n", id, rbuffer.mtext);
+
+		i++;
+	}
+}
+
+void produtor() {
+	int i;
+	message_buf sbuf;
+	size_t buf_size;
+
+	for (i = 0; i < MSGNUM; i++){
+		sbuf.mtype = 1;
+		sprintf(sbuf.mtext, "Msg %d", i);
+		buf_size = strlen(sbuf.mtext) + 1 ;
+
+		if((i % 2) != 0) {													/* id = 1 */
+			if (msgsnd(idMSG2, &sbuf, buf_size, IPC_NOWAIT) < 0) {
+				printf("Erro - produtor. \n");
+			}
+
+		} else {															/* id = 0 */
+			if (msgsnd(idMSG, &sbuf, buf_size, IPC_NOWAIT) < 0) {
+				printf("Erro - produtor. \n");
+			}
+
+		}
+		int aux = ((i % 2) == 0)? 0 : 1;
+		printf("Produtor para consumidor %d: %s\n", aux, sbuf.mtext);
+
+		sleep(1);
+	}
+}
+
+int main (void) {
+
+  	key_t chave1 = 1235;
+	key_t chave2 = 1234;
+
+	if ((idMSG = msgget(chave1, IPC_CREAT | 0666 )) < 0) 
+		exit(1);
+
+	if ((idMSG2 = msgget(chave2, IPC_CREAT | 0666 )) < 0) 
+		exit(1);
+
+	if (fork() == 0) {
+		consumidor(0);				/* Processo - Consumidor 0 */
+
+	} else if(fork() == 0) {
+		consumidor(1);				/* Processo - Consumidor 1 */
+
+	} else {
+		produtor();					/* Processo - Produtor */
+
+	}
+
+	return 0;
+}
+
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o exer2 exer2.c
+$ ./exerc2
+-----------------------------------------------------
+RESULTADO
+
+Produtor para consumidor 0: Msg 0
+Produtor para consumidor 1: Msg 1
+Consumidor 0: Msg 0 
+Consumidor 1: Msg 1 
+Produtor para consumidor 0: Msg 2
+Produtor para consumidor 1: Msg 3
+Consumidor 0: Msg 2 
+Consumidor 1: Msg 3 
+Produtor para consumidor 0: Msg 4
+Produtor para consumidor 1: Msg 5
+Consumidor 0: Msg 4 
+Consumidor 1: Msg 5 
+Produtor para consumidor 0: Msg 6
+Produtor para consumidor 1: Msg 7
+Consumidor 1: Msg 7 
+Consumidor 0: Msg 6 
+Produtor para consumidor 0: Msg 8
+Produtor para consumidor 1: Msg 9
+Consumidor 1: Msg 9 
+Consumidor 0: Msg 8 
+Produtor para consumidor 0: Msg 10
+Produtor para consumidor 1: Msg 11
+Consumidor 0: Msg 10 
+Consumidor 1: Msg 11 
+Produtor para consumidor 0: Msg 12
+Produtor para consumidor 1: Msg 13
+Consumidor 0: Msg 12 
+Consumidor 1: Msg 13 
+Produtor para consumidor 0: Msg 14
+Produtor para consumidor 1: Msg 15
+Consumidor 1: Msg 15 
+Consumidor 0: Msg 14 
+Produtor para consumidor 0: Msg 16
+Produtor para consumidor 1: Msg 17
+Consumidor 0: Msg 16 
+Consumidor 1: Msg 17 
+Produtor para consumidor 0: Msg 18
+Produtor para consumidor 1: Msg 19
+Consumidor 0: Msg 18 
+Consumidor 1: Msg 19 
+Produtor para consumidor 0: Msg 20
+Produtor para consumidor 1: Msg 21
+Consumidor 0: Msg 20 
+Consumidor 1: Msg 21 
+Produtor para consumidor 0: Msg 22
+Produtor para consumidor 1: Msg 23
+Consumidor 0: Msg 22 
+Consumidor 1: Msg 23 
+Produtor para consumidor 0: Msg 24
+Produtor para consumidor 1: Msg 25
+Consumidor 1: Msg 25 
+Consumidor 0: Msg 24 
+Produtor para consumidor 0: Msg 26
+Produtor para consumidor 1: Msg 27
+Consumidor 1: Msg 27 
+Consumidor 0: Msg 26 
+Produtor para consumidor 0: Msg 28
+Produtor para consumidor 1: Msg 29
+Consumidor 1: Msg 29 
+Consumidor 0: Msg 28 
+Produtor para consumidor 0: Msg 30
+Produtor para consumidor 1: Msg 31
+Consumidor 1: Msg 31 
+Consumidor 0: Msg 30 
+Produtor para consumidor 0: Msg 32
+Produtor para consumidor 1: Msg 33
+Consumidor 1: Msg 33 
+Consumidor 0: Msg 32 
+Produtor para consumidor 0: Msg 34
+Produtor para consumidor 1: Msg 35
+Consumidor 0: Msg 34 
+Consumidor 1: Msg 35 
+Produtor para consumidor 0: Msg 36
+Produtor para consumidor 1: Msg 37
+Consumidor 1: Msg 37 
+Consumidor 0: Msg 36 
+Produtor para consumidor 0: Msg 38
+Produtor para consumidor 1: Msg 39
+Consumidor 1: Msg 39 
+Consumidor 0: Msg 38 
+Produtor para consumidor 0: Msg 40
+Produtor para consumidor 1: Msg 41
+Consumidor 1: Msg 41 
+Consumidor 0: Msg 40 
+Produtor para consumidor 0: Msg 42
+Produtor para consumidor 1: Msg 43
+Consumidor 1: Msg 43 
+Consumidor 0: Msg 42 
+Produtor para consumidor 0: Msg 44
+Produtor para consumidor 1: Msg 45
+Consumidor 1: Msg 45 
+Consumidor 0: Msg 44 
+Produtor para consumidor 0: Msg 46
+Produtor para consumidor 1: Msg 47
+Consumidor 1: Msg 47 
+Consumidor 0: Msg 46 
+Produtor para consumidor 0: Msg 48
+Produtor para consumidor 1: Msg 49
+Consumidor 1: Msg 49 
+Consumidor 0: Msg 48 
+Produtor para consumidor 0: Msg 50
+Produtor para consumidor 1: Msg 51
+Consumidor 0: Msg 50 
+Consumidor 1: Msg 51 
+Produtor para consumidor 0: Msg 52
+Produtor para consumidor 1: Msg 53
+Consumidor 1: Msg 53 
+Consumidor 0: Msg 52 
+Produtor para consumidor 0: Msg 54
+Produtor para consumidor 1: Msg 55
+Consumidor 1: Msg 55 
+Consumidor 0: Msg 54 
+Produtor para consumidor 0: Msg 56
+Produtor para consumidor 1: Msg 57
+Consumidor 1: Msg 57 
+Consumidor 0: Msg 56 
+Produtor para consumidor 0: Msg 58
+Produtor para consumidor 1: Msg 59
+Consumidor 0: Msg 58 
+Consumidor 1: Msg 59 
+Produtor para consumidor 0: Msg 60
+Produtor para consumidor 1: Msg 61
+Consumidor 1: Msg 61 
+Consumidor 0: Msg 60 
+Produtor para consumidor 0: Msg 62
+Produtor para consumidor 1: Msg 63
+Consumidor 0: Msg 62 
+Consumidor 1: Msg 63 
+
+-----------------------------------------------------
+CONCLUSÃO2.
+
+Essa questão é muito parecida com a questão 1.
+A diferença é que a cada execução do produtor, hora ele irá inserir na lista de mensagens do
+consumidor 0, hora ele irá inserir na lista de mensagens do consumidor 1, alternadamente, de forma que 64 itens sejam produzidos e metade deles seja consuido por cada um dos consumidores.
+
+-----------------------------------------------------
