@@ -1,0 +1,280 @@
+Aluno Wellington Bezerra - 1413383
+Aluno Guilherme Marques - 1220676
+
+QUESTÃO 1)  Criar, via programa, o diretório sc em seu
+diretório corrente; criar os subdiretórios a, b
+e c; Criar arquivos txt nos subdiretórios e
+escrever textos nestes arquivos.
+-----------------------------------------------------
+lab1.c
+
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main(void) {
+    char *str = "W";
+    
+    mkdir("./sc", 0700);
+    mkdir("./sc/a", 0700);
+    mkdir("./sc/b", 0700);
+    mkdir("./sc/c", 0700);
+    
+    int fd2 = open("./sc/a/arq.txt", O_CREAT | O_WRONLY, 0777);
+    write(fd2, str, sizeof(char));
+    int fd3 = open("./sc/b/arq.txt", O_CREAT | O_WRONLY, 0777);
+    write(fd3, str, sizeof(char));
+    int fd4 = open("./sc/c/arq.txt", O_CREAT | O_WRONLY, 0777);
+    write(fd4, str, sizeof(char));
+    
+    close(fd2);
+    close(fd3);
+    close(fd4);
+    
+    return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab1 lab1.c
+$ ./lab1
+
+-----------------------------------------------------
+RESULTADO
+
+-----------------------------------------------------
+CONCLUSÃO1.
+
+Foi observado que dentro da pasta sc foram criadas tres pastas:
+a, b e c. Além disso, dentro de cada pasta foi criado um arquivo
+com um caracter como foi pedido pelo enunciado. 
+
+-----------------------------------------------------
+
+QUESTÃO 2) Exibir os atributos de um dos arquivos
+criados. 
+
+-----------------------------------------------------
+lab2.c
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+int main(void) {
+  struct stat fileAt;
+
+  if (stat("./sc/a/arq.txt", &fileAt) < 0) {
+    printf("File Error Message = %s\n", strerror(errno));
+
+  } else {
+    printf( "Permi: %d\n", fileAt.st_mode );
+    printf( "Size: %lld\n", fileAt.st_size );
+    printf( "Access Time: %ld\n", fileAt.st_atime );
+    printf( "Device: %d\n", fileAt.st_uid );
+    printf( "Permi Changed: %ld\n", fileAt.st_ctime );
+
+  }
+
+  return 0;
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab2 lab2.c
+$ ./lab2
+
+-----------------------------------------------------
+RESULTADO
+
+Permi: 33279
+Size: 2
+Access Time: 1512179640
+Device: 501
+Permi Changed: 1512179639
+
+-----------------------------------------------------
+CONCLUSÃO2. 
+
+Foi exibido os atributos do arquivo "arq.txt" da pasta a.
+
+-----------------------------------------------------
+QUESTÃO 3) Buscar um dado arquivo a partir do diretório
+sc, ler e imprimir o conteúdo do arquivo
+encontrado. 
+
+-----------------------------------------------------
+lab3.c
+
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main(void) {
+  struct dirent **nome;
+  int n;
+
+  n = scandir(".", &nome, NULL, alphasort);
+
+  if (n < 0) {
+    perror("scandir");
+
+  } else {
+    while (n--) {
+      if(strcmp("arq.txt", nome[n]->d_name) == 0) {
+        char read_file[1];
+        int fd2 = open("./sc/a/arq.txt", O_RDONLY, 0777);
+        read(fd2, read_file, 2);
+        printf("%s\n", read_file);
+        exit(1);
+      }
+      free(nome[n]);
+    }
+
+    puts("Aquivo n encontrado!");
+    free(nome);
+  }
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab3 lab3.c
+$ ./lab3
+
+-----------------------------------------------------
+RESULTADO
+
+W
+
+-----------------------------------------------------
+CONCLUSÃO3.
+
+O arquivo arq.txt da pasta a é acessado e o caracter dentro dele é
+é printado no terminal
+
+-----------------------------------------------------
+QUESTÃO 4) Alterar o conteúdo do arquivo, exibindo o
+resultado obtido. Usar a primitiva seek para
+realizar esta alteração.
+
+-----------------------------------------------------
+lab4.c
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main(void) {
+    struct dirent **nome;
+    int n;
+    
+    n = scandir(".", &nome, NULL, alphasort);
+    
+    if (n < 0) {
+        perror("scandir");
+        
+    } else {
+        while (n--) {
+            
+            if(strcmp("arq.txt", nome[n]->d_name) == 0) {
+                char string[1] = "P";
+                char read_file[1];
+                int fd2 = open("./sc/a/arq.txt", O_RDONLY, 0777);
+                int fd3 = open("./sc/a/arq.txt", O_WRONLY, 0777);
+                lseek(fd3, 1, SEEK_SET);
+                write(fd3, string, sizeof(char));
+                read(fd2, read_file, 2);
+                printf("%s\n",read_file);
+                exit(1);
+            }
+            free(nome[n]);
+        }
+        puts("Aquivo não encontrado!");
+        free(nome);
+    }
+}
+
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab4 lab4.c
+$ ./lab4
+
+-----------------------------------------------------
+RESULTADO
+
+P
+
+-----------------------------------------------------
+CONCLUSÃO4.
+
+O arquivo arq.txt dentro da apsta a é acessado e o caracter 'w' é trocado
+por 'P'
+
+-----------------------------------------------------
+QUESTÃO 5) Mudar a permissão de acesso ao arquivo.
+
+-----------------------------------------------------
+lab5.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+
+int main(int argc, char **argv) {
+  char mode[] = "0777";
+  char buf[100] = "./sc/a/arq.txt";
+  int i;
+
+  i = strtol(mode, 0, 8);
+
+  if (chmod (buf,i) < 0) {
+    puts("Erro!");
+    exit(1);
+  }
+
+  return(0);
+}
+
+-----------------------------------------------------
+COMPILAÇÃO E EXECUÇÃO
+
+$ gcc -o lab5 lab5.c
+$ ./lab5
+$ ./lab2
+
+-----------------------------------------------------
+RESULTADO
+
+Permi: 33261
+Size: 1
+Access Time: 1512179731
+Device: 501
+Permi Changed: 1512179730
+
+-----------------------------------------------------
+CONCLUSÃO5.
+
+O arquivo lab5.c é compilado e executado fazendo com que a permissão
+do arquivo seja alterada. 
+-----------------------------------------------------
+
+
