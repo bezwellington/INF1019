@@ -62,7 +62,6 @@ void produtor() {
   size_t buf_size;
 
   for (i = 0; i < MSGNUM; i++){
-    sbuffer.mtype = 1;
     sprintf(sbuffer.mtext, "Mensagem: %d", i);
     buf_size = strlen(sbuffer.mtext) + 1 ;
 
