@@ -1,0 +1,8 @@
+Modo de executar:
+
+gcc -Wall -o gm gm.c vm.c semaphore.c
+
+
+Contato:
+
+email: bezwellington@gmail.com
